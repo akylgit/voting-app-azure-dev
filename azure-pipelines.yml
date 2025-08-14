@@ -1,0 +1,43 @@
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - result/**
+      - azure-result.yml
+
+pr:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - result/**
+      - azure-result.yml
+
+variables:
+  IMAGE_NAME: "example-voting-app-result" # Docker image name
+  TAG: "$(Build.BuildId)" # Dynamic build ID tag
+
+jobs:
+  - job: BuildAndPushDocker
+    displayName: "Build and Push Docker Image to DockerHub"
+    pool:
+      name: "azureagent" # Self-hosted agent pool
+    steps:
+      - task: Checkout@1
+        displayName: "Checkout Repository"
+
+      - task: Docker@2
+        displayName: "Build and Push Docker Image"
+        inputs:
+          command: "buildAndPush"
+          containerRegistry: "docker-hub" # DockerHub service connection
+          repository: "akyldocker25/$(IMAGE_NAME)"
+          dockerfile: "result/Dockerfile"
+          buildContext: "result"
+          tags: |
+            $(TAG)      # dynamic tag
+            latest      # static tag
+          platforms: "linux/amd64,linux/arm64,linux/arm/v7"
