@@ -1,15 +1,10 @@
 # azure-pipelines.yml
-# Build and Push Docker image to Docker Hub
-
 trigger:
   - main
 
-resources:
-  - repo: self
-
 variables:
-  IMAGE_NAME: "example-voting-app-result"   # Docker image name
-  TAG: "$(Build.BuildId)"                   # dynamic build number tag
+  IMAGE_NAME: "example-voting-app-result"
+  TAG: "$(Build.BuildId)"
 
 stages:
 - stage: Build
@@ -18,29 +13,22 @@ stages:
   - job: BuildAndPush
     displayName: Build and Push Docker Image
     pool:
-      name: azureagent   # self-hosted agent
+      name: azureagent   # your self-hosted agent pool
     steps:
 
     - task: Checkout@1
       displayName: Checkout Repository
 
-    # Login to Docker Hub (requires service connection or username/password secrets)
-    - task: Docker@2
-      displayName: Docker Login
-      inputs:
-        command: login
-        containerRegistry: docker-hub   # name of your Docker Hub service connection
-
-    # Build and push image
     - task: Docker@2
       displayName: Build and Push Docker Image
       inputs:
         command: buildAndPush
-        containerRegistry: docker-hub
-        repository: akyldocker25/$(IMAGE_NAME)   # replace with your Docker Hub username
+        containerRegistry: docker-hub   # your Docker Hub service connection name
+        repository: akyldocker25/$(IMAGE_NAME)
         dockerfile: result/Dockerfile
         buildContext: result
         tags: |
           latest
           $(TAG)
         platforms: linux/amd64,linux/arm64,linux/arm/v7
+
