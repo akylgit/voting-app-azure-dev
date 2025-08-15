@@ -11,12 +11,14 @@ pr:
 variables:
   IMAGE_NAME: voting-app-azure-dev-result
   TAG: $(Build.BuildId)   # Dynamic build ID tag
+  DOCKER_HUB_USERNAME: akyldocker25
+  DOCKER_HUB_SERVICE_CONNECTION: docker-hub  # Your service connection name
 
 jobs:
   - job: BuildAndPushDocker
-    displayName: Build and Push Docker Image to DockerHub
+    displayName: Build and Push Docker Image to Docker Hub
     pool:
-      name: azureagent   # Your self-hosted agent pool (Linux)
+      name: azureagent  # Your self-hosted Linux agent
 
     steps:
       # 1. Checkout code
@@ -42,7 +44,7 @@ jobs:
         displayName: Docker Login
         inputs:
           command: login
-          containerRegistry: docker-hub  # Must match your service connection
+          containerRegistry: $(DOCKER_HUB_SERVICE_CONNECTION)
 
       # 5. Build & push multi-platform Docker image
       - script: |
@@ -50,8 +52,8 @@ jobs:
           docker buildx create --use
           docker buildx build \
             --platform linux/amd64,linux/arm64,linux/arm/v7 \
-            -t akyldocker25/$(IMAGE_NAME):$(TAG) \
-            -t akyldocker25/$(IMAGE_NAME):latest \
+            -t $(DOCKER_HUB_USERNAME)/$(IMAGE_NAME):$(TAG) \
+            -t $(DOCKER_HUB_USERNAME)/$(IMAGE_NAME):latest \
             -f result/Dockerfile result \
             --push
         displayName: Build and Push Docker Image
