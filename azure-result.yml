@@ -9,27 +9,49 @@ pr:
       - main
 
 variables:
-  IMAGE_NAME: example-voting-app-result  # Docker image name
-  TAG: $(Build.BuildId)                  # Dynamic build ID tag
+  IMAGE_NAME: voting-app-azure-dev-result
+  TAG: $(Build.BuildId)   # Dynamic build ID tag
 
 jobs:
   - job: BuildAndPushDocker
     displayName: Build and Push Docker Image to DockerHub
     pool:
-      name: azureagent                   # Self-hosted agent pool
+      name: azureagent   # Your self-hosted agent pool (Linux)
+
     steps:
+      # 1. Checkout code
       - task: Checkout@1
         displayName: Checkout Repository
 
+      # 2. Install Docker (if needed)
+      - script: |
+          echo "Installing Docker..."
+          sudo apt-get update
+          sudo apt-get install -y docker.io
+        displayName: Install Docker
+
+      # 3. Update Docker permissions for agent user
+      - script: |
+          echo "Updating Docker permissions..."
+          sudo usermod -aG docker $(whoami)
+          newgrp docker
+        displayName: Adjust Docker Permissions
+
+      # 4. Login to Docker Hub using service connection
       - task: Docker@2
-        displayName: Build and Push Docker Image
+        displayName: Docker Login
         inputs:
-          command: buildAndPush
-          containerRegistry: docker-hub   # DockerHub service connection
-          repository: akyldocker25/$(IMAGE_NAME)
-          dockerfile: result/Dockerfile
-          buildContext: result
-          tags: |
-            $(TAG)
-            latest
-          platforms: linux/amd64,linux/arm64,linux/arm/v7
+          command: login
+          containerRegistry: docker-hub  # Must match your service connection
+
+      # 5. Build & push multi-platform Docker image
+      - script: |
+          echo "Building and pushing Docker image..."
+          docker buildx create --use
+          docker buildx build \
+            --platform linux/amd64,linux/arm64,linux/arm/v7 \
+            -t akyldocker25/$(IMAGE_NAME):$(TAG) \
+            -t akyldocker25/$(IMAGE_NAME):latest \
+            -f result/Dockerfile result \
+            --push
+        displayName: Build and Push Docker Image
