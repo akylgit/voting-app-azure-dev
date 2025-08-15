@@ -13,7 +13,7 @@ stages:
   - job: Build
     displayName: Build and Push
     pool:
-      name: azureagent  # your self-hosted Linux agent
+      name: azureagent  # your self-hosted agent
 
     steps:
     # 1. Checkout repository
@@ -25,16 +25,14 @@ stages:
       displayName: Docker Login
       inputs:
         command: login
-        containerRegistry: docker-hub   # exact name of your service connection
+        containerRegistry: docker-hub
 
-    # 3. Build & push multi-platform Docker image
+    # 3. Build & push single-platform Docker image
     - script: |
-        echo "Building and pushing Docker image..."
-        docker buildx create --use
-        docker buildx build \
-          --platform linux/amd64,linux/arm64 \
-          -t $(DOCKER_HUB_USERNAME)/$(IMAGE_NAME):$(TAG) \
-          -t $(DOCKER_HUB_USERNAME)/$(IMAGE_NAME):latest \
-          -f result/Dockerfile result \
-          --push
+        echo "Building Docker image..."
+        docker build -t $(DOCKER_HUB_USERNAME)/$(IMAGE_NAME):$(TAG) -t $(DOCKER_HUB_USERNAME)/$(IMAGE_NAME):latest -f result/Dockerfile result
+        echo "Pushing Docker image..."
+        docker push $(DOCKER_HUB_USERNAME)/$(IMAGE_NAME):$(TAG)
+        docker push $(DOCKER_HUB_USERNAME)/$(IMAGE_NAME):latest
       displayName: Build and Push Docker Image
+
