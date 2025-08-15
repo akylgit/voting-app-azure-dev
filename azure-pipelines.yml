@@ -1,10 +1,6 @@
 trigger:
 - main
 
-# Remove 'resources: self' if the pipeline is linked directly to GitHub
-# resources:
-# - repo: self
-
 variables:
   IMAGE_NAME: voting-app-azure-dev-result
   TAG: $(Build.BuildId)
@@ -20,41 +16,33 @@ stages:
       name: azureagent  # your self-hosted Linux agent
 
     steps:
-    # 1. Checkout repository (default checkout works when pipeline is linked to GitHub)
+    # 1. Checkout repository
     - checkout: self
       displayName: Checkout Repository
 
-    # 2. Install Docker (if not installed)
+    # 2. Install Docker and Buildx
     - script: |
-        echo "Installing Docker..."
+        echo "Installing Docker and Buildx..."
         sudo apt-get update
-        sudo apt-get install -y docker.io
-      displayName: Install Docker
-
-    # 3. Install Docker Buildx
-    - script: |
-        echo "Setting up Docker Buildx..."
-        mkdir -p ~/.docker/cli-plugins
-        curl -SL https://github.com/docker/buildx/releases/latest/download/buildx-linux-amd64 -o ~/.docker/cli-plugins/docker-buildx
-        chmod +x ~/.docker/cli-plugins/docker-buildx
+        sudo apt-get install -y docker.io docker-buildx-plugin
         docker buildx version
-      displayName: Install Docker Buildx
+      displayName: Install Docker & Buildx
 
-    # 4. Add current user to Docker group
+    # 3. Add current user to Docker group
     - script: |
         echo "Updating Docker permissions..."
         sudo usermod -aG docker $(whoami)
         newgrp docker
       displayName: Adjust Docker Permissions
 
-    # 5. Docker Hub login (use exact service connection name)
+    # 4. Docker Hub login
     - task: Docker@2
       displayName: Docker Login
       inputs:
         command: login
-        containerRegistry: docker-hub   # exact name of your service connection
+        containerRegistry: docker-hub  # exact name of your service connection
 
-    # 6. Build & push multi-platform image
+    # 5. Build & push multi-platform Docker image
     - script: |
         echo "Building and pushing Docker image..."
         docker buildx create --use
