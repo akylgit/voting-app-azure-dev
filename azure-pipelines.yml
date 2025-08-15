@@ -1,14 +1,10 @@
 trigger:
 - main
 
-resources:
-- repo: self
-
 variables:
-  tag: '$(Build.BuildId)'
   IMAGE_NAME: voting-app-azure-dev-result
+  TAG: $(Build.BuildId)
   DOCKER_HUB_USERNAME: akyldocker25
-  DOCKER_HUB_SERVICE_CONNECTION: docker-hub  # your service connection name
 
 stages:
 - stage: Build
@@ -17,21 +13,26 @@ stages:
   - job: Build
     displayName: Build and Push
     pool:
-      vmImage: ubuntu-latest
+      name: azureagent  # your self-hosted agent
+
     steps:
+    # 1. Checkout repository
+    - checkout: self
+      displayName: Checkout Repository
+
+    # 2. Docker Hub login
     - task: Docker@2
       displayName: Docker Login
       inputs:
         command: login
-        containerRegistry: $(DOCKER_HUB_SERVICE_CONNECTION)
+        containerRegistry: docker-hub
 
-    - task: Docker@2
+    # 3. Build & push single-platform Docker image
+    - script: |
+        echo "Building Docker image..."
+        docker build -t $(DOCKER_HUB_USERNAME)/$(IMAGE_NAME):$(TAG) -t $(DOCKER_HUB_USERNAME)/$(IMAGE_NAME):latest -f result/Dockerfile result
+        echo "Pushing Docker image..."
+        docker push $(DOCKER_HUB_USERNAME)/$(IMAGE_NAME):$(TAG)
+        docker push $(DOCKER_HUB_USERNAME)/$(IMAGE_NAME):latest
       displayName: Build and Push Docker Image
-      inputs:
-        command: buildAndPush
-        dockerfile: '$(Build.SourcesDirectory)/result/Dockerfile'
-        containerRegistry: $(DOCKER_HUB_SERVICE_CONNECTION)
-        repository: $(DOCKER_HUB_USERNAME)/$(IMAGE_NAME)
-        tags: |
-          $(tag)
-          latest
+
