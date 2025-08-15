@@ -1,0 +1,37 @@
+trigger:
+- main
+
+resources:
+- repo: self
+
+variables:
+  tag: '$(Build.BuildId)'
+  IMAGE_NAME: voting-app-azure-dev-result
+  DOCKER_HUB_USERNAME: akyldocker25
+  DOCKER_HUB_SERVICE_CONNECTION: docker-hub  # your service connection name
+
+stages:
+- stage: Build
+  displayName: Build and Push Docker Image
+  jobs:
+  - job: Build
+    displayName: Build and Push
+    pool:
+      vmImage: ubuntu-latest
+    steps:
+    - task: Docker@2
+      displayName: Docker Login
+      inputs:
+        command: login
+        containerRegistry: $(DOCKER_HUB_SERVICE_CONNECTION)
+
+    - task: Docker@2
+      displayName: Build and Push Docker Image
+      inputs:
+        command: buildAndPush
+        dockerfile: '$(Build.SourcesDirectory)/result/Dockerfile'
+        containerRegistry: $(DOCKER_HUB_SERVICE_CONNECTION)
+        repository: $(DOCKER_HUB_USERNAME)/$(IMAGE_NAME)
+        tags: |
+          $(tag)
+          latest
