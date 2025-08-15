@@ -28,16 +28,6 @@ stages:
         docker --version
       displayName: Install Docker
 
-    # 3. Install Docker Buildx manually
-    - script: |
-        echo "Installing Docker Buildx manually..."
-        mkdir -p ~/.docker/cli-plugins
-        curl -SL https://github.com/docker/buildx/releases/latest/download/buildx-linux-amd64 -o ~/.docker/cli-plugins/docker-buildx
-        chmod +x ~/.docker/cli-plugins/docker-buildx
-        export DOCKER_CLI_PLUGIN_DIR=$HOME/.docker/cli-plugins
-        docker buildx version
-      displayName: Install Docker Buildx
-
     # 4. Add current user to Docker group
     - script: |
         echo "Updating Docker permissions..."
