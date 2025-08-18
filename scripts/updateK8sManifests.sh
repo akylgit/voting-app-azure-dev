@@ -14,6 +14,7 @@ TAG="$3"
 # Ensure required environment variables are set
 : "${GIT_USER:?GIT_USER is not set}"
 : "${GIT_EMAIL:?GIT_EMAIL is not set}"
+: "${GIT_TOKEN:?GIT_TOKEN is not set}"
 
 # Configure git
 git config --global user.email "$GIT_EMAIL"
@@ -39,6 +40,7 @@ if git diff --cached --quiet; then
   echo "No changes to commit"
 else
   git commit -m "Update $SERVICE deployment image to $TAG"
-  git push
+  # Push using token for GitHub Actions authentication
+  git push https://$GIT_USER:$GIT_TOKEN@github.com/akylgit/voting-app-azure-dev.git HEAD:main
   echo "Changes pushed successfully!"
 fi
