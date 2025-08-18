@@ -5,8 +5,8 @@ on:
     branches:
       - main
     paths:
-      - "result/**"
-      - ".github/workflows/argocd/**"
+      - result/*
+      - .github/workflows/argocd/**
 variables:
   imageRepository: "akyldocker25/voting-app-result"
   tag: "$(Build.BuildId)"
