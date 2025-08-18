@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - .github/workflows/argocd/**
+      - .github/workflows/argocd/docker-build-result.yaml
       - result/**
 
 env:
