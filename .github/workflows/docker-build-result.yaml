@@ -6,7 +6,7 @@ on:
       - main
     paths:
       - result/**
-      - .github/workflows/** # triggers if any workflow file changes
+      - .github/workflows/** # triggers if any workflow file changes IN
 
 env:
   IMAGE_REPOSITORY: akyldocker25/voting-app-result
