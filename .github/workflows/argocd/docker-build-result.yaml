@@ -4,10 +4,6 @@ on:
   push:
     branches:
       - main
-    paths:
-      - result/**
-      - .github/workflows/argocd/**
-
 env:
   IMAGE_REPOSITORY: akyldocker25/voting-app-result
   TAG: ${{ github.run_id }} # unique ID for each run
