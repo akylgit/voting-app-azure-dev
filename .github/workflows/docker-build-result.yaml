@@ -4,15 +4,20 @@ on:
   push:
     branches:
       - main
+    paths:
+      - result/**
+      - scripts/**
+      - .github/workflows/**
+
 env:
   IMAGE_REPOSITORY: akyldocker25/voting-app-result
-  TAG: ${{ github.run_id }} # unique ID per run
-  ARGOCD_SERVER: argocd.example.com
+  TAG: ${{ github.run_id }}
+  GIT_USER: akylgit
+  GIT_EMAIL: johns.ak87@gmail.com
+  ARGOCD_SERVER: https://192.168.56.11:8080
+  ARGOCD_APP_NAME: result-app
   ARGOCD_USERNAME: ${{ secrets.ARGOCD_USERNAME }}
   ARGOCD_PASSWORD: ${{ secrets.ARGOCD_PASSWORD }}
-  ARGOCD_APP_NAME: voting-app
-  GIT_USER: "akylgit" # replace with your GitHub username
-  GIT_EMAIL: "johns.ak87@gmail.com" # replace with your email
 
 jobs:
   build_and_push:
@@ -20,6 +25,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GIT_TOKEN }}
 
       - name: Docker login
         run: echo ${{ secrets.DOCKERHUB_PASSWORD }} | docker login -u akyldocker25 --password-stdin
@@ -39,29 +46,34 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GIT_TOKEN }}
 
       - name: Update Kubernetes Manifests
         env:
-          GIT_TOKEN: ${{ secrets.GIT_TOKEN }}
-          GIT_USER: ${{ env.GIT_USER }}
-          GIT_EMAIL: ${{ env.GIT_EMAIL }}
           IMAGE_REPOSITORY: ${{ env.IMAGE_REPOSITORY }}
           TAG: ${{ env.TAG }}
+          GIT_USER: ${{ env.GIT_USER }}
+          GIT_EMAIL: ${{ env.GIT_EMAIL }}
         run: bash scripts/updateK8sManifests.sh vote $IMAGE_REPOSITORY $TAG
 
   deploy_argocd:
     runs-on: ubuntu-latest
     needs: update_k8s
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
       - name: Install ArgoCD CLI
         run: |
           curl -sSL -o /usr/local/bin/argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
           chmod +x /usr/local/bin/argocd
 
       - name: Sync ArgoCD
+        env:
+          ARGOCD_SERVER: ${{ env.ARGOCD_SERVER }}
+          ARGOCD_APP_NAME: ${{ env.ARGOCD_APP_NAME }}
+          ARGOCD_USERNAME: ${{ env.ARGOCD_USERNAME }}
+          ARGOCD_PASSWORD: ${{ env.ARGOCD_PASSWORD }}
         run: |
+          # Login to your local ArgoCD
           argocd login $ARGOCD_SERVER --username $ARGOCD_USERNAME --password $ARGOCD_PASSWORD --insecure
+          # Sync the existing application
           argocd app sync $ARGOCD_APP_NAME

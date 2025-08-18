@@ -12,22 +12,14 @@ IMAGE_REPO="$2"
 TAG="$3"
 
 # Ensure required environment variables are set
-: "${GIT_TOKEN:?GIT_TOKEN is not set. Please set it in GitHub Secrets}"
-: "${GIT_USER:?GIT_USER is not set. Please set it in GitHub Secrets or env}"
-: "${GIT_EMAIL:?GIT_EMAIL is not set. Please set it in GitHub Secrets or env}"
+: "${GIT_USER:?GIT_USER is not set}"
+: "${GIT_EMAIL:?GIT_EMAIL is not set}"
 
 # Configure git
 git config --global user.email "$GIT_EMAIL"
 git config --global user.name "$GIT_USER"
 
-# Create temporary directory and ensure cleanup
-TEMP_DIR=$(mktemp -d)
-trap "rm -rf $TEMP_DIR" EXIT
-
-# Clone the repository using GitHub token (handles special characters)
-git clone https://"$GIT_USER":"$GIT_TOKEN"@github.com/akylgit/voting-app-azure-dev.git "$TEMP_DIR"
-cd "$TEMP_DIR"
-
+# Working directory is already the repo (GitHub Actions checkout)
 MANIFEST_FILE="k8s-specifications/$SERVICE-deployment.yaml"
 
 # Check if manifest exists
