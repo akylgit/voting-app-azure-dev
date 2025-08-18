@@ -7,58 +7,52 @@ on:
     paths:
       - result/*
       - .github/workflows/argocd/**
-variables:
-  imageRepository: "akyldocker25/voting-app-result"
-  tag: "$(Build.BuildId)"
 
-stages:
-  - stage: Build
-    displayName: Build and Push Docker Image
-    jobs:
-      - job: Build
-        displayName: Build
-        pool:
-          vmImage: "ubuntu-latest"
-        steps:
-          - checkout: self
+env:
+  IMAGE_REPOSITORY: akyldocker25/voting-app-result
+  TAG: ${{ github.run_id }} # unique ID for each run
+  ARGOCD_SERVER: argocd.example.com
+  ARGOCD_USERNAME: ${{ secrets.ARGOCD_USERNAME }}
+  ARGOCD_PASSWORD: ${{ secrets.ARGOCD_PASSWORD }}
+  ARGOCD_APP_NAME: voting-app
 
-          # Docker login, build and push
-          - script: |
-              echo "Logging into Docker Hub..."
-              echo $(DOCKERHUB_PASSWORD) | docker login -u akyldocker25 --password-stdin
+jobs:
+  build_and_push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-              echo "Building Docker image..."
-              docker build -t $(imageRepository):$(tag) -t $(imageRepository):latest result/
+      - name: Docker login
+        run: echo ${{ secrets.DOCKERHUB_PASSWORD }} | docker login -u akyldocker25 --password-stdin
 
-              echo "Pushing Docker image..."
-              docker push $(imageRepository):$(tag)
-              docker push $(imageRepository):latest
-            displayName: Build and Push Docker Image
-            env:
-              DOCKERHUB_PASSWORD: $(dockerhub_token) # Define in pipeline variable or secret
+      - name: Build Docker image
+        run: |
+          docker build -t $IMAGE_REPOSITORY:$TAG -t $IMAGE_REPOSITORY:latest result/
 
-  - stage: Update
-    displayName: Update Kubernetes Manifests
-    dependsOn: Build
-    jobs:
-      - job: Update
-        displayName: Update
-        steps:
-          - checkout: self
-          - task: ShellScript@2
-            inputs:
-              scriptPath: "scripts/updateK8sManifests.sh"
-              args: "vote $(imageRepository) $(tag)"
+      - name: Push Docker image
+        run: |
+          docker push $IMAGE_REPOSITORY:$TAG
+          docker push $IMAGE_REPOSITORY:latest
 
-  - stage: Deploy
-    displayName: Trigger ArgoCD Sync
-    dependsOn: Update
-    jobs:
-      - job: Deploy
-        displayName: Trigger ArgoCD
-        steps:
-          - checkout: self
-          - script: |
-              argocd login $(ARGOCD_SERVER) --username $(ARGOCD_USERNAME) --password $(ARGOCD_PASSWORD) --insecure
-              argocd app sync $(ARGOCD_APP_NAME)
-            displayName: Trigger ArgoCD Sync
+  update_k8s:
+    runs-on: ubuntu-latest
+    needs: build_and_push
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Update K8s Manifests
+        run: bash scripts/updateK8sManifests.sh vote $IMAGE_REPOSITORY $TAG
+
+  deploy_argocd:
+    runs-on: ubuntu-latest
+    needs: update_k8s
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Sync ArgoCD
+        run: |
+          argocd login $ARGOCD_SERVER --username $ARGOCD_USERNAME --password $ARGOCD_PASSWORD --insecure
+          argocd app sync $ARGOCD_APP_NAME
