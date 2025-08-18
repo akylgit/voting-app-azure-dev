@@ -4,10 +4,6 @@ on:
   push:
     branches:
       - main
-    paths:
-      - result/**
-      - .github/workflows/**
-
 env:
   IMAGE_REPOSITORY: akyldocker25/voting-app-result
   TAG: ${{ github.run_id }} # unique ID per run
