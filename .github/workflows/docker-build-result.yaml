@@ -5,11 +5,12 @@ on:
     branches:
       - main
     paths:
-      - .github/workflows
+      - result/**
+      - .github/workflows/** # triggers if any workflow file changes
 
 env:
   IMAGE_REPOSITORY: akyldocker25/voting-app-result
-  TAG: ${{ github.run_id }} # Unique ID for each run
+  TAG: ${{ github.run_id }} # unique ID per run
   ARGOCD_SERVER: argocd.example.com
   ARGOCD_USERNAME: ${{ secrets.ARGOCD_USERNAME }}
   ARGOCD_PASSWORD: ${{ secrets.ARGOCD_PASSWORD }}
