@@ -6,7 +6,7 @@ on:
       - main
     paths:
       - result/**
-      - .github/workflows/** # triggers if any workflow file changes IN
+      - .github/workflows/**
 
 env:
   IMAGE_REPOSITORY: akyldocker25/voting-app-result
@@ -15,6 +15,8 @@ env:
   ARGOCD_USERNAME: ${{ secrets.ARGOCD_USERNAME }}
   ARGOCD_PASSWORD: ${{ secrets.ARGOCD_PASSWORD }}
   ARGOCD_APP_NAME: voting-app
+  GIT_USER: "your-github-username" # replace with your GitHub username
+  GIT_EMAIL: "your-email@example.com" # replace with your email
 
 jobs:
   build_and_push:
@@ -43,6 +45,12 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Update Kubernetes Manifests
+        env:
+          GIT_TOKEN: ${{ secrets.GIT_TOKEN }}
+          GIT_USER: ${{ env.GIT_USER }}
+          GIT_EMAIL: ${{ env.GIT_EMAIL }}
+          IMAGE_REPOSITORY: ${{ env.IMAGE_REPOSITORY }}
+          TAG: ${{ env.TAG }}
         run: bash scripts/updateK8sManifests.sh vote $IMAGE_REPOSITORY $TAG
 
   deploy_argocd:
