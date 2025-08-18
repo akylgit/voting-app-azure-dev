@@ -1,12 +1,12 @@
-trigger:
-  branches:
-    include:
-      - main
-  paths:
-    include:
-      - result/*
-      - .github/workflows/argocd/**
+name: ArgoCD Workflow
 
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "result/**"
+      - ".github/workflows/argocd/**"
 variables:
   imageRepository: "akyldocker25/voting-app-result"
   tag: "$(Build.BuildId)"
