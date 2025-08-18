@@ -14,7 +14,7 @@ env:
   TAG: ${{ github.run_id }}
   GIT_USER: akylgit
   GIT_EMAIL: johns.ak87@gmail.com
-  ARGOCD_SERVER: https://192.168.56.11:8080
+  ARGOCD_SERVER: 192.168.56.11:8080
   ARGOCD_APP_NAME: result-app
   ARGOCD_USERNAME: ${{ secrets.ARGOCD_USERNAME }}
   ARGOCD_PASSWORD: ${{ secrets.ARGOCD_PASSWORD }}
