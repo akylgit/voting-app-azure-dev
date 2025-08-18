@@ -25,7 +25,8 @@ TEMP_DIR=$(mktemp -d)
 trap "rm -rf $TEMP_DIR" EXIT
 
 # Clone the repo using token for authentication
-git clone https://"$GIT_TOKEN"@github.com/voting-app.git "$TEMP_DIR"
+git clone https://"$GIT_TOKEN"@github.com/akylgit/voting-app-azure-dev.git "$TEMP_DIR"
+
 cd "$TEMP_DIR"
 
 MANIFEST_FILE="k8s-specifications/$SERVICE-deployment.yaml"
