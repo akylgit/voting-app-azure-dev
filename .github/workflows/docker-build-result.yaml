@@ -15,8 +15,8 @@ env:
   ARGOCD_USERNAME: ${{ secrets.ARGOCD_USERNAME }}
   ARGOCD_PASSWORD: ${{ secrets.ARGOCD_PASSWORD }}
   ARGOCD_APP_NAME: voting-app
-  GIT_USER: "your-github-username" # replace with your GitHub username
-  GIT_EMAIL: "your-email@example.com" # replace with your email
+  GIT_USER: "akylgit" # replace with your GitHub username
+  GIT_EMAIL: "johns.ak87@gmail.com" # replace with your email
 
 jobs:
   build_and_push:
