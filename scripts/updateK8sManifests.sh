@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-# Check arguments
+# Usage check
 if [ "$#" -ne 3 ]; then
   echo "Usage: $0 <service> <image_repo> <tag>"
   exit 1
@@ -24,9 +24,8 @@ git config --global user.name "$GIT_USER"
 TEMP_DIR=$(mktemp -d)
 trap "rm -rf $TEMP_DIR" EXIT
 
-# Clone the repo using token for authentication
-git clone https://"$GIT_TOKEN"@github.com/akylgit/voting-app-azure-dev.git "$TEMP_DIR"
-
+# Clone the repository using GitHub token (handles special characters)
+git clone https://"$GIT_USER":"$GIT_TOKEN"@github.com/akylgit/voting-app-azure-dev.git "$TEMP_DIR"
 cd "$TEMP_DIR"
 
 MANIFEST_FILE="k8s-specifications/$SERVICE-deployment.yaml"
