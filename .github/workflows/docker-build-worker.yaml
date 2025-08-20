@@ -1,13 +1,10 @@
 name: Build and Push Docker Image (worker)
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - worker/**
-      - scripts/**
-      - .github/workflows/**
+  workflow_run:
+    workflows: ["Build and Push Docker Image (vote)"]
+    types:
+      - completed
 
 env:
   IMAGE_REPOSITORY: akyldocker25/voting-app-worker
