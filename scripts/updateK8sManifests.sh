@@ -30,7 +30,7 @@ if [ ! -f "$MANIFEST_FILE" ]; then
 fi
 
 # Update the image in deployment YAML
-sed -i "s|^\(\s*image:\s*\).*|\1$IMAGE_REPO:$TAG|" "$MANIFEST_FILE"
+sed -i "s|\(image:\s*\).*|\1$IMAGE_REPO:$TAG|" "$MANIFEST_FILE"
 
 # Stage changes
 git add "$MANIFEST_FILE"
