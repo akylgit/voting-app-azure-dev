@@ -1,20 +1,20 @@
-name: ArgoCD Workflow
+name: Build and Push Docker Images (result)
 
 on:
   push:
     branches:
       - main
     paths:
-      - .github/workflows/argocd/docker-build-result.yaml
       - result/**
+      - scripts/**
+      - .github/workflows/**
 
 env:
   IMAGE_REPOSITORY: akyldocker25/voting-app-result
-  TAG: ${{ github.run_id }} # Unique ID for each run
-  ARGOCD_SERVER: argocd.example.com
-  ARGOCD_USERNAME: ${{ secrets.ARGOCD_USERNAME }}
-  ARGOCD_PASSWORD: ${{ secrets.ARGOCD_PASSWORD }}
-  ARGOCD_APP_NAME: voting-app
+  TAG: ${{ github.run_id }}
+  GIT_USER: akylgit
+  GIT_EMAIL: johns.ak87@gmail.com
+  GIT_TOKEN: ${{ secrets.GIT_TOKEN }}
 
 jobs:
   build_and_push:
@@ -22,6 +22,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GIT_TOKEN }}
 
       - name: Docker login
         run: echo ${{ secrets.DOCKERHUB_PASSWORD }} | docker login -u akyldocker25 --password-stdin
@@ -35,29 +37,11 @@ jobs:
           docker push $IMAGE_REPOSITORY:$TAG
           docker push $IMAGE_REPOSITORY:latest
 
-  update_k8s:
-    runs-on: ubuntu-latest
-    needs: build_and_push
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
       - name: Update Kubernetes Manifests
-        run: bash scripts/updateK8sManifests.sh vote $IMAGE_REPOSITORY $TAG
-
-  deploy_argocd:
-    runs-on: ubuntu-latest
-    needs: update_k8s
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Install ArgoCD CLI
-        run: |
-          curl -sSL -o /usr/local/bin/argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
-          chmod +x /usr/local/bin/argocd
-
-      - name: Sync ArgoCD
-        run: |
-          argocd login $ARGOCD_SERVER --username $ARGOCD_USERNAME --password $ARGOCD_PASSWORD --insecure
-          argocd app sync $ARGOCD_APP_NAME
+        env:
+          IMAGE_REPOSITORY: ${{ env.IMAGE_REPOSITORY }}
+          TAG: ${{ env.TAG }}
+          GIT_USER: ${{ env.GIT_USER }}
+          GIT_EMAIL: ${{ env.GIT_EMAIL }}
+          GIT_TOKEN: ${{ env.GIT_TOKEN }}
+        run: bash scripts/updateK8sManifests.sh $IMAGE_REPOSITORY $TAG result

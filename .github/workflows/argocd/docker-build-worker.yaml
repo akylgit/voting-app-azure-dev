@@ -1,16 +1,16 @@
-name: Build and Push Docker Images (result)
+name: Build and Push Docker Image (worker)
 
 on:
   push:
     branches:
       - main
     paths:
-      - result/**
+      - worker/**
       - scripts/**
       - .github/workflows/**
 
 env:
-  IMAGE_REPOSITORY: akyldocker25/voting-app-result
+  IMAGE_REPOSITORY: akyldocker25/voting-app-worker
   TAG: ${{ github.run_id }}
   GIT_USER: akylgit
   GIT_EMAIL: johns.ak87@gmail.com
@@ -30,7 +30,7 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build -t $IMAGE_REPOSITORY:$TAG -t $IMAGE_REPOSITORY:latest result/
+          docker build -t $IMAGE_REPOSITORY:$TAG -t $IMAGE_REPOSITORY:latest worker/
 
       - name: Push Docker image
         run: |
@@ -44,4 +44,4 @@ jobs:
           GIT_USER: ${{ env.GIT_USER }}
           GIT_EMAIL: ${{ env.GIT_EMAIL }}
           GIT_TOKEN: ${{ env.GIT_TOKEN }}
-        run: bash scripts/updateK8sManifests.sh $IMAGE_REPOSITORY $TAG result
+        run: bash scripts/updateK8sManifests.sh $IMAGE_REPOSITORY $TAG worker
