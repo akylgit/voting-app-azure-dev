@@ -2,14 +2,15 @@
 set -euo pipefail
 
 # Usage check
-if [ "$#" -ne 3 ]; then
-  echo "Usage: $0 <service> <image_repo> <tag>"
+if [ "$#" -lt 3 ]; then
+  echo "Usage: $0 <image_repo> <tag> <service1> [service2 ...]"
   exit 1
 fi
 
-SERVICE="$1"
-IMAGE_REPO="$2"
-TAG="$3"
+IMAGE_REPO="$1"
+TAG="$2"
+shift 2
+SERVICES=("$@")
 
 # Ensure required environment variables are set
 : "${GIT_USER:?GIT_USER is not set}"
@@ -20,27 +21,25 @@ TAG="$3"
 git config --global user.email "$GIT_EMAIL"
 git config --global user.name "$GIT_USER"
 
-# Working directory is already the repo (GitHub Actions checkout)
-MANIFEST_FILE="k8s-specifications/$SERVICE-deployment.yaml"
+# Update manifests for each service
+for SERVICE in "${SERVICES[@]}"; do
+  MANIFEST_FILE="k8s-specifications/$SERVICE-deployment.yaml"
 
-# Check if manifest exists
-if [ ! -f "$MANIFEST_FILE" ]; then
-  echo "Error: $MANIFEST_FILE does not exist"
-  exit 1
-fi
+  if [ ! -f "$MANIFEST_FILE" ]; then
+    echo "Warning: $MANIFEST_FILE does not exist, skipping."
+    continue
+  fi
 
-# Update the image in deployment YAML
-sed -i "s|\(image:\s*\).*|\1$IMAGE_REPO:$TAG|" "$MANIFEST_FILE"
+  echo "Updating $MANIFEST_FILE to image $IMAGE_REPO:$TAG"
+  sed -i "s|\(image:\s*\).*|\1$IMAGE_REPO:$TAG|" "$MANIFEST_FILE"
+  git add "$MANIFEST_FILE"
+done
 
-# Stage changes
-git add "$MANIFEST_FILE"
-
-# Commit and push if there are changes
+# Commit and push changes
 if git diff --cached --quiet; then
   echo "No changes to commit"
 else
-  git commit -m "Update $SERVICE deployment image to $TAG"
-  # Push using token for GitHub Actions authentication
+  git commit -m "Update deployment images to $TAG"
   git push https://$GIT_USER:$GIT_TOKEN@github.com/akylgit/voting-app-azure-dev.git HEAD:main
-  echo "Changes pushed successfully!"
+  echo "All updates pushed successfully!"
 fi
