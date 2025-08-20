@@ -14,7 +14,7 @@ env:
   TAG: ${{ github.run_id }}
   GIT_USER: akylgit
   GIT_EMAIL: johns.ak87@gmail.com
-
+  GIT_TOKEN: ${{ secrets.GIT_TOKEN }}
 jobs:
   build_and_push:
     runs-on: ubuntu-latest
