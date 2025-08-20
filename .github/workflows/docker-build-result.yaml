@@ -44,4 +44,4 @@ jobs:
           GIT_USER: ${{ env.GIT_USER }}
           GIT_EMAIL: ${{ env.GIT_EMAIL }}
           GIT_TOKEN: ${{ env.GIT_TOKEN }}
-        run: bash scripts/updateK8sManifests.sh result $IMAGE_REPOSITORY $TAG
+        run: bash scripts/updateK8sManifests.sh $IMAGE_REPOSITORY $TAG result
