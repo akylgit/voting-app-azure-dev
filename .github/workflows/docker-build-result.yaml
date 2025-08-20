@@ -15,6 +15,7 @@ env:
   GIT_USER: akylgit
   GIT_EMAIL: johns.ak87@gmail.com
   GIT_TOKEN: ${{ secrets.GIT_TOKEN }}
+
 jobs:
   build_and_push:
     runs-on: ubuntu-latest
@@ -42,4 +43,5 @@ jobs:
           TAG: ${{ env.TAG }}
           GIT_USER: ${{ env.GIT_USER }}
           GIT_EMAIL: ${{ env.GIT_EMAIL }}
-        run: bash scripts/updateK8sManifests.sh vote $IMAGE_REPOSITORY $TAG
+          GIT_TOKEN: ${{ env.GIT_TOKEN }}
+        run: bash scripts/updateK8sManifests.sh result $IMAGE_REPOSITORY $TAG
