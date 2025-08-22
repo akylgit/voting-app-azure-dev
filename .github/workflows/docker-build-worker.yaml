@@ -1,8 +1,8 @@
-name: Build and Push Docker Image (worker)
+name: Build and Push Docker Images (worker)
 
 on:
   workflow_run:
-    workflows: ["Build and Push Docker Image (vote)"]
+    workflows: ["Build and Push Docker Images (vote)"]
     types:
       - completed
 
@@ -53,14 +53,11 @@ jobs:
       - name: Trigger Deploy Workflow
         uses: actions/github-script@v6
         with:
-          github-token: ${{ secrets.GIT_TOKEN }} # ✅ Use PAT here
           script: |
             await github.rest.actions.createWorkflowDispatch({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              workflow_id: "deploy-to-env.yaml",  // exact file name in .github/workflows
+              workflow_id: "deploy-to-env.yaml",
               ref: "main",
-              inputs: {
-                tag: "${{ env.TAG }}"
-              }
+              inputs: { tag: "${{ env.TAG }}" }
             })
