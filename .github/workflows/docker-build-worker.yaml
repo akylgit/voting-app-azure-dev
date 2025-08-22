@@ -1,10 +1,13 @@
 name: Build and Push Docker Image (worker)
 
 on:
-  workflow_run:
-    workflows: ["Build and Push Docker Image (vote)"]
-    types:
-      - completed
+  push:
+    branches:
+      - main
+    paths:
+      - worker/**
+      - scripts/**
+      - .github/workflows/**
 
 env:
   IMAGE_REPOSITORY: akyldocker25/voting-app-worker
@@ -21,7 +24,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           token: ${{ secrets.GIT_TOKEN }}
-          fetch-depth: 0 # full history for rebasing
+          fetch-depth: 0 # full history for safe rebasing
 
       - name: Sync with latest main
         run: |
@@ -49,3 +52,17 @@ jobs:
           GIT_EMAIL: ${{ env.GIT_EMAIL }}
           GIT_TOKEN: ${{ env.GIT_TOKEN }}
         run: bash scripts/updateK8sManifests.sh $IMAGE_REPOSITORY $TAG worker
+
+      - name: Trigger Deploy Workflow
+        uses: actions/github-script@v6
+        with:
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: "deploy-to-env.yaml", // must exist in .github/workflows
+              ref: "main",
+              inputs: {
+                tag: "${{ env.TAG }}"
+              }
+            })
