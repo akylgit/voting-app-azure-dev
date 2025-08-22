@@ -10,7 +10,7 @@ on:
 
 jobs:
   deploy_to_dev:
-    runs-on: self-hosted # 🔑 Must be self-hosted to reach 192.168.56.11
+    runs-on: ubuntu-latest
     environment: dev
     steps:
       - name: Checkout code
@@ -22,17 +22,15 @@ jobs:
           ARGOCD_SERVER: ${{ secrets.ARGOCD_SERVER_DEV }}
         run: |
           set -e
-          argocd login $ARGOCD_SERVER --auth-token $ARGOCD_TOKEN --insecure
+          argocd login $ARGOCD_SERVER --username ${{ secrets.ARGOCD_USERNAME }} --password $ARGOCD_TOKEN --insecure
           for app in result vote worker; do
             echo "Syncing $app to Dev with tag ${{ github.event.inputs.tag }}..."
             argocd app sync $app
           done
 
   deploy_to_qa:
-    runs-on: self-hosted
-    environment:
-      name: qa
-      url: https://qa.example.com
+    runs-on: ubuntu-latest
+    environment: qa
     needs: deploy_to_dev
     steps:
       - name: Checkout code
@@ -44,17 +42,15 @@ jobs:
           ARGOCD_SERVER: ${{ secrets.ARGOCD_SERVER_QA }}
         run: |
           set -e
-          argocd login $ARGOCD_SERVER --auth-token $ARGOCD_TOKEN --insecure
+          argocd login $ARGOCD_SERVER --username ${{ secrets.ARGOCD_USERNAME }} --password $ARGOCD_TOKEN --insecure
           for app in result vote worker; do
             echo "Syncing $app to QA with tag ${{ github.event.inputs.tag }}..."
             argocd app sync $app
           done
 
   deploy_to_prod:
-    runs-on: self-hosted
-    environment:
-      name: prod
-      url: https://prod.example.com
+    runs-on: ubuntu-latest
+    environment: prod
     needs: deploy_to_qa
     steps:
       - name: Checkout code
@@ -66,7 +62,7 @@ jobs:
           ARGOCD_SERVER: ${{ secrets.ARGOCD_SERVER_PROD }}
         run: |
           set -e
-          argocd login $ARGOCD_SERVER --auth-token $ARGOCD_TOKEN --insecure
+          argocd login $ARGOCD_SERVER --username ${{ secrets.ARGOCD_USERNAME }} --password $ARGOCD_TOKEN --insecure
           for app in result vote worker; do
             echo "Syncing $app to Prod with tag ${{ github.event.inputs.tag }}..."
             argocd app sync $app
