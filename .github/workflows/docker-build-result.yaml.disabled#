@@ -1,0 +1,47 @@
+name: Build and Push Docker Images (result)
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - result/**
+      - scripts/**
+      - .github/workflows/**
+
+env:
+  IMAGE_REPOSITORY: akyldocker25/voting-app-result
+  TAG: ${{ github.run_id }}
+  GIT_USER: akylgit
+  GIT_EMAIL: johns.ak87@gmail.com
+  GIT_TOKEN: ${{ secrets.GIT_TOKEN }}
+
+jobs:
+  build_and_push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GIT_TOKEN }}
+
+      - name: Docker login
+        run: echo ${{ secrets.DOCKERHUB_PASSWORD }} | docker login -u akyldocker25 --password-stdin
+
+      - name: Build Docker image
+        run: |
+          docker build -t $IMAGE_REPOSITORY:$TAG -t $IMAGE_REPOSITORY:latest result/
+
+      - name: Push Docker image
+        run: |
+          docker push $IMAGE_REPOSITORY:$TAG
+          docker push $IMAGE_REPOSITORY:latest
+
+      - name: Update Kubernetes Manifests
+        env:
+          IMAGE_REPOSITORY: ${{ env.IMAGE_REPOSITORY }}
+          TAG: ${{ env.TAG }}
+          GIT_USER: ${{ env.GIT_USER }}
+          GIT_EMAIL: ${{ env.GIT_EMAIL }}
+          GIT_TOKEN: ${{ env.GIT_TOKEN }}
+        run: bash scripts/updateK8sManifests.sh $IMAGE_REPOSITORY $TAG result
