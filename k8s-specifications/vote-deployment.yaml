@@ -15,7 +15,7 @@ spec:
         app: vote
     spec:
       containers:
-      - image: akyldocker25/voting-app-vote:17109161610
+      - image: akyldocker25/voting-app-vote:17163717237
         name: vote
         ports:
         - containerPort: 80
