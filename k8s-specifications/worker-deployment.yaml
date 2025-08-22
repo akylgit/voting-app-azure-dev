@@ -15,5 +15,5 @@ spec:
         app: worker
     spec:
       containers:
-      - image: akyldocker25/voting-app-worker:17109174259
+      - image: akyldocker25/voting-app-worker:17164049725
         name: worker
