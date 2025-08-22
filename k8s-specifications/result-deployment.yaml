@@ -15,7 +15,7 @@ spec:
         app: result
     spec:
       containers:
-      - image: akyldocker25/voting-app-result:17109150590
+      - image: akyldocker25/voting-app-result:17163706469
         name: result
         ports:
         - containerPort: 80
