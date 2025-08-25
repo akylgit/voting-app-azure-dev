@@ -1,4 +1,4 @@
-name: Build and Deploy Voting App Services
+name: Build and Deploy Voting App
 
 on:
   push:
@@ -8,184 +8,38 @@ on:
       - "result/**"
       - "vote/**"
       - "worker/**"
-      - "scripts/**"
       - ".github/workflows/**"
 
-env:
-  GIT_USER: akylgit
-  GIT_EMAIL: johns.ak87@gmail.com
-  GIT_TOKEN: ${{ secrets.GIT_TOKEN }}
-
 jobs:
-  # Build Result Service
-  build_result:
+  build_and_deploy:
     runs-on: ubuntu-latest
-    outputs:
-      TAG: ${{ steps.set_tag.outputs.tag }}
+    strategy:
+      matrix:
+        service: [result, vote, worker] # All three services
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v3
-        with:
-          token: ${{ secrets.GIT_TOKEN }}
-          fetch-depth: 0
 
-      - name: Set Docker Tag
+      - name: Set Image Tag
         id: set_tag
-        run: echo "tag=${GITHUB_RUN_ID}" >> $GITHUB_OUTPUT
+        run: echo "tag=$(date +%s)" >> $GITHUB_OUTPUT
 
-      - name: Docker login
-        run: echo ${{ secrets.DOCKERHUB_PASSWORD }} | docker login -u akyldocker25 --password-stdin
+      - name: Login to DockerHub
+        run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
 
-      - name: Build Docker image
-        run: docker build -t akyldocker25/voting-app-result:${GITHUB_RUN_ID} -t akyldocker25/voting-app-result:latest result/
-
-      - name: Push Docker image
+      - name: Build & Push Docker Image
         run: |
-          docker push akyldocker25/voting-app-result:${GITHUB_RUN_ID}
-          docker push akyldocker25/voting-app-result:latest
+          docker build -t akyldocker25/voting-app-${{ matrix.service }}:${{ steps.set_tag.outputs.tag }} ./${{ matrix.service }}
+          docker push akyldocker25/voting-app-${{ matrix.service }}:${{ steps.set_tag.outputs.tag }}
 
       - name: Update Kubernetes Manifest
         env:
-          IMAGE_REPOSITORY: akyldocker25/voting-app-result
-          TAG: ${{ steps.set_tag.outputs.tag }}
-          GIT_USER: ${{ env.GIT_USER }}
-          GIT_EMAIL: ${{ env.GIT_EMAIL }}
-          GIT_TOKEN: ${{ env.GIT_TOKEN }}
-        run: bash scripts/updateK8sManifests.sh $IMAGE_REPOSITORY $TAG result
-
-  # Build Vote Service
-  build_vote:
-    runs-on: ubuntu-latest
-    needs: build_result
-    outputs:
-      TAG: ${{ steps.set_tag.outputs.tag }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-        with:
-          token: ${{ secrets.GIT_TOKEN }}
-          fetch-depth: 0
-
-      - name: Set Docker Tag
-        id: set_tag
-        run: echo "tag=${GITHUB_RUN_ID}" >> $GITHUB_OUTPUT
-
-      - name: Docker login
-        run: echo ${{ secrets.DOCKERHUB_PASSWORD }} | docker login -u akyldocker25 --password-stdin
-
-      - name: Build Docker image
-        run: docker build -t akyldocker25/voting-app-vote:${GITHUB_RUN_ID} -t akyldocker25/voting-app-vote:latest vote/
-
-      - name: Push Docker image
+          GIT_USER: ${{ secrets.GIT_USER }}
+          GIT_EMAIL: ${{ secrets.GIT_EMAIL }}
+          GIT_TOKEN: ${{ secrets.GIT_TOKEN }}
         run: |
-          docker push akyldocker25/voting-app-vote:${GITHUB_RUN_ID}
-          docker push akyldocker25/voting-app-vote:latest
-
-      - name: Update Kubernetes Manifest
-        env:
-          IMAGE_REPOSITORY: akyldocker25/voting-app-vote
-          TAG: ${{ steps.set_tag.outputs.tag }}
-          GIT_USER: ${{ env.GIT_USER }}
-          GIT_EMAIL: ${{ env.GIT_EMAIL }}
-          GIT_TOKEN: ${{ env.GIT_TOKEN }}
-        run: bash scripts/updateK8sManifests.sh $IMAGE_REPOSITORY $TAG vote
-
-  # Build Worker Service
-  build_worker:
-    runs-on: ubuntu-latest
-    needs: build_vote
-    outputs:
-      TAG: ${{ steps.set_tag.outputs.tag }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-        with:
-          token: ${{ secrets.GIT_TOKEN }}
-          fetch-depth: 0
-
-      - name: Set Docker Tag
-        id: set_tag
-        run: echo "tag=${GITHUB_RUN_ID}" >> $GITHUB_OUTPUT
-
-      - name: Docker login
-        run: echo ${{ secrets.DOCKERHUB_PASSWORD }} | docker login -u akyldocker25 --password-stdin
-
-      - name: Build Docker image
-        run: docker build -t akyldocker25/voting-app-worker:${GITHUB_RUN_ID} -t akyldocker25/voting-app-worker:latest worker/
-
-      - name: Push Docker image
-        run: |
-          docker push akyldocker25/voting-app-worker:${GITHUB_RUN_ID}
-          docker push akyldocker25/voting-app-worker:latest
-
-      - name: Update Kubernetes Manifest
-        env:
-          IMAGE_REPOSITORY: akyldocker25/voting-app-worker
-          TAG: ${{ steps.set_tag.outputs.tag }}
-          GIT_USER: ${{ env.GIT_USER }}
-          GIT_EMAIL: ${{ env.GIT_EMAIL }}
-          GIT_TOKEN: ${{ env.GIT_TOKEN }}
-        run: bash scripts/updateK8sManifests.sh $IMAGE_REPOSITORY $TAG worker
-
-  # Deploy to Dev
-  deploy_dev:
-    runs-on: ubuntu-latest
-    needs: build_worker
-    environment: dev
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Deploy all services to Dev
-        env:
-          ARGOCD_TOKEN: ${{ secrets.ARGOCD_TOKEN_DEV }}
-          ARGOCD_SERVER: ${{ secrets.ARGOCD_SERVER_DEV }}
-        run: |
-          set -e
-          argocd login $ARGOCD_SERVER --username ${{ secrets.ARGOCD_USERNAME }} --password $ARGOCD_TOKEN --insecure
-          for app in result vote worker; do
-            echo "Syncing $app to Dev with tag ${{ needs.build_worker.outputs.TAG }}..."
-            argocd app sync $app
-          done
-
-  # Deploy to QA
-  deploy_qa:
-    runs-on: ubuntu-latest
-    needs: deploy_dev
-    environment: qa
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Deploy all services to QA
-        env:
-          ARGOCD_TOKEN: ${{ secrets.ARGOCD_TOKEN_QA }}
-          ARGOCD_SERVER: ${{ secrets.ARGOCD_SERVER_QA }}
-        run: |
-          set -e
-          argocd login $ARGOCD_SERVER --username ${{ secrets.ARGOCD_USERNAME }} --password $ARGOCD_TOKEN --insecure
-          for app in result vote worker; do
-            echo "Syncing $app to QA with tag ${{ needs.build_worker.outputs.TAG }}..."
-            argocd app sync $app
-          done
-
-  # Deploy to Prod
-  deploy_prod:
-    runs-on: ubuntu-latest
-    needs: deploy_qa
-    environment: prod
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Deploy all services to Prod
-        env:
-          ARGOCD_TOKEN: ${{ secrets.ARGOCD_TOKEN_PROD }}
-          ARGOCD_SERVER: ${{ secrets.ARGOCD_SERVER_PROD }}
-        run: |
-          set -e
-          argocd login $ARGOCD_SERVER --username ${{ secrets.ARGOCD_USERNAME }} --password $ARGOCD_TOKEN --insecure
-          for app in result vote worker; do
-            echo "Syncing $app to Prod with tag ${{ needs.build_worker.outputs.TAG }}..."
-            argocd app sync $app
-          done
+          git config user.name "$GIT_USER"
+          git config user.email "$GIT_EMAIL"
+          git pull --rebase origin main
+          bash scripts/updateK8sManifests.sh akyldocker25/voting-app-${{ matrix.service }} ${{ steps.set_tag.outputs.tag }} ${{ matrix.service }}
+          git push https://$GIT_USER:$GIT_TOKEN@github.com/akylgit/voting-app-azure-dev.git HEAD:main
